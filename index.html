@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JESA · AHF/DSA Planning Level 4 & Clash Manager</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='15' fill='%230A2540'/%3E%3Ctext x='50' y='72' font-family='Arial Black,Arial,sans-serif' font-size='62' font-weight='900' fill='white' text-anchor='middle' letter-spacing='-2'%3EJ%3C/text%3E%3Ccircle cx='80' cy='78' r='9' fill='%23C4D82E'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --jesa-navy: #0A2540;
+  --jesa-navy-light: #1B2D4F;
+  --jesa-navy-darker: #061829;
+  --jesa-lime: #C4D82E;
+  --jesa-lime-bright: #D4E73F;
+  --jesa-lime-dark: #A8C81F;
+  --jesa-white: #FFFFFF;
+  --jesa-cream: #F8F7F3;
+  --jesa-gray-bg: #F0F2F5;
+  --jesa-gray-border: #D8DBE0;
+  --jesa-text: #1A2332;
+  --jesa-text-muted: #6B7280;
+  --jesa-text-soft: #9CA3AF;
+}
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--jesa-gray-bg);
+  color: var(--jesa-text);
+  min-height: 100vh;
+  font-size: 13px;
+}
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, var(--jesa-navy) 0%, var(--jesa-navy-light) 100%);
+  border-bottom: 3px solid var(--jesa-lime);
+  padding: 16px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 200px; height: 100%;
+  background: radial-gradient(circle at top right, rgba(196,216,46,0.15), transparent 70%);
+  pointer-events: none;
+}
+.header-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; position: relative; z-index: 1; }
+.logo-block { display: flex; align-items: center; gap: 14px; }
+.jesa-logo {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--jesa-lime), var(--jesa-lime-dark));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px; color: var(--jesa-navy);
+  letter-spacing: -0.5px;
+  box-shadow: 0 2px 8px rgba(196,216,46,0.3);
+}
+.title { font-size: 16px; font-weight: 700; color: var(--jesa-white); font-family: 'Inter', sans-serif; letter-spacing: -0.3px; }
+.subtitle { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 3px; font-weight: 400; }
+.divider-vert {
+  width: 1px; height: 40px;
+  background: rgba(255,255,255,0.2);
+  margin: 0 4px;
+}
+.date-input {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+  color: var(--jesa-white); padding: 7px 12px; font-size: 12px;
+  font-weight: 500;
+}
+.date-input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.7); }
+.stats-bar { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; position: relative; z-index: 1; }
+.stat-card {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+  padding: 12px 18px; flex: 1 1 140px; min-width: 120px;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s;
+}
+.stat-card:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(196,216,46,0.4);
+}
+.stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+.stat-label {
+  font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 3px;
+  text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;
+}
+
+/* TABS */
+.tabs {
+  display: flex; border-bottom: 1px solid var(--jesa-gray-border);
+  background: var(--jesa-white);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.tab {
+  padding: 14px 22px; font-size: 12px; font-weight: 500;
+  color: var(--jesa-text-muted); background: transparent;
+  border: none; border-bottom: 3px solid transparent;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  letter-spacing: 0.2px;
+}
+.tab:hover { color: var(--jesa-navy); background: var(--jesa-cream); }
+.tab.active {
+  font-weight: 700; color: var(--jesa-navy);
+  background: var(--jesa-white);
+  border-bottom-color: var(--jesa-lime);
+}
+
+/* CONTENT */
+.content {
+  padding: 16px 20px;
+  max-height: calc(100vh - 230px);
+  overflow-y: auto;
+}
+
+/* FILTERS */
+.filters-bar {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 16px; align-items: center;
+  padding: 12px 14px;
+  background: var(--jesa-white);
+  border: 1px solid var(--jesa-gray-border);
+  border-radius: 10px;
+}
+.filter-label {
+  color: var(--jesa-navy); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; gap: 4px;
+  letter-spacing: 0.5px;
+}
+.filter-select {
+  background: var(--jesa-cream); border: 1px solid var(--jesa-gray-border); border-radius: 6px;
+  color: var(--jesa-text); padding: 7px 10px; font-size: 11px;
+  min-width: 100px; font-weight: 500;
+  transition: all 0.15s;
+}
+.filter-select:hover { border-color: var(--jesa-navy); }
+.filter-select:focus { outline: none; border-color: var(--jesa-lime); box-shadow: 0 0 0 3px rgba(196,216,46,0.2); }
+.view-toggle {
+  background: var(--jesa-cream); border: 1px solid var(--jesa-gray-border);
+  border-radius: 4px; padding: 6px 10px; color: var(--jesa-text-muted);
+  display: flex; align-items: center;
+  font-weight: 600;
+}
+.view-toggle.active { background: var(--jesa-navy); color: var(--jesa-white); border-color: var(--jesa-navy); }
+.btn-add {
+  background: var(--jesa-navy);
+  border: none; border-radius: 6px; color: var(--jesa-white);
+  padding: 8px 16px; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s;
+  letter-spacing: 0.2px;
+}
+.btn-add:hover { background: var(--jesa-navy-light); transform: translateY(-1px); box-shadow: 0 4px 8px rgba(10,37,64,0.2); }
+.btn-import {
+  background: var(--jesa-lime); border: none;
+  border-radius: 6px; color: var(--jesa-navy);
+  padding: 8px 16px; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 6px rgba(196,216,46,0.4);
+}
+.btn-import:hover { background: var(--jesa-lime-bright); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(196,216,46,0.5); }
+.btn-week {
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px; color: var(--jesa-white);
+  padding: 8px 14px; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s;
+}
+.btn-week:hover { background: rgba(255,255,255,0.2); border-color: var(--jesa-lime); }
+.btn-template {
+  background: transparent; border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 6px; color: var(--jesa-white);
+  padding: 8px 14px; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.15s;
+}
+.btn-template:hover { background: rgba(196,216,46,0.15); border-color: var(--jesa-lime); color: var(--jesa-lime-bright); }
+
+/* SYNC BAR */
+.sync-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 24px;
+  background: var(--jesa-navy-darker);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px; font-family: 'Inter', sans-serif;
+}
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.sync-dot.idle { background: #6B7280; }
+.sync-dot.loading { background: #F59E0B; animation: pulse 1s infinite; }
+.sync-dot.success { background: #C4D82E; }
+.sync-dot.error { background: #DC2626; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.sync-msg { color: rgba(255,255,255,0.7); flex: 1; }
+.sync-time { color: rgba(255,255,255,0.4); font-size: 10px; }
+.btn-sync-load {
+  background: rgba(196,216,46,0.15); border: 1px solid rgba(196,216,46,0.4);
+  border-radius: 5px; color: #C4D82E; padding: 5px 12px; font-size: 10px;
+  font-weight: 700; font-family: 'Inter', sans-serif; letter-spacing: 0.3px;
+  transition: all 0.15s;
+}
+.btn-sync-load:hover { background: rgba(196,216,46,0.25); }
+.btn-sync-export {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 5px; color: rgba(255,255,255,0.8); padding: 5px 12px; font-size: 10px;
+  font-weight: 600; font-family: 'Inter', sans-serif;
+  transition: all 0.15s;
+}
+.btn-sync-export:hover { background: rgba(255,255,255,0.15); }
+.btn-clash {
+  background: #EF5350; border: none; border-radius: 6px;
+  color: #fff; padding: 7px 14px; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* AREA CARDS */
+.area-card {
+  background: var(--jesa-white); border-radius: 10px;
+  border: 1px solid var(--jesa-gray-border); overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: all 0.15s;
+}
+.area-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.area-card.has-warning { border-color: #F59E0B; border-left: 4px solid #F59E0B; }
+.area-card.has-clash { border-color: #DC2626; border-left: 4px solid #DC2626; }
+.area-header {
+  padding: 12px 16px; display: flex; align-items: center;
+  justify-content: space-between; background: var(--jesa-cream);
+  border-bottom: 1px solid var(--jesa-gray-border); flex-wrap: wrap; gap: 8px;
+}
+.area-header.warning { background: #FFFBEB; }
+.area-header.clash { background: #FEF2F2; }
+.area-title-block { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.zone-badge {
+  font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+  color: var(--jesa-white); letter-spacing: 0.7px;
+}
+.zone-badge.ISBL { background: var(--jesa-navy); }
+.zone-badge.OSBL { background: var(--jesa-lime-dark); color: var(--jesa-navy); }
+.area-name { font-size: 13px; font-weight: 700; color: var(--jesa-navy); font-family: 'Inter', sans-serif; }
+.warning-pill {
+  font-size: 10px; padding: 3px 10px; border-radius: 12px; font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.warning-pill.warning { background: #FEF3C7; color: #92400E; }
+.warning-pill.clash { background: #FEE2E2; color: #991B1B; }
+
+/* ACTIVITY ROW */
+.activity-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-radius: 6px; margin-bottom: 3px;
+  border-left: 3px solid; transition: all 0.15s;
+  flex-wrap: wrap;
+  background: var(--jesa-white);
+}
+.activity-row.blocked { background: #FEF2F2; }
+.activity-row:hover { background: var(--jesa-cream); }
+.priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.contractor-tag {
+  font-size: 9px; font-weight: 800; padding: 3px 7px; border-radius: 4px;
+  min-width: 32px; text-align: center; flex-shrink: 0;
+  letter-spacing: 0.4px;
+}
+.discipline-tag {
+  font-size: 9px; color: var(--jesa-text-muted); min-width: 50px; flex-shrink: 0;
+  background: var(--jesa-gray-bg); padding: 2px 6px; border-radius: 3px;
+  font-weight: 600;
+}
+.activity-name {
+  font-size: 11px; color: var(--jesa-text); flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: 'Inter', sans-serif; min-width: 200px;
+  font-weight: 500;
+}
+.status-badge {
+  font-size: 9px; padding: 3px 9px; border-radius: 10px;
+  font-weight: 700; flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.progress-block { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.progress-bar {
+  width: 60px; height: 6px; background: var(--jesa-gray-bg);
+  border-radius: 3px; overflow: hidden;
+}
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.progress-text { font-size: 10px; color: var(--jesa-text-muted); min-width: 30px; text-align: right; font-weight: 600; }
+.dates-text { font-size: 9px; color: var(--jesa-text-soft); flex-shrink: 0; min-width: 70px; font-weight: 500; }
+.area-tag-list { font-size: 9px; color: var(--jesa-text-muted); min-width: 60px; flex-shrink: 0; font-weight: 500; }
+.contractor-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.contractor-pill {
+  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+.activity-actions {
+  display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.activity-row:hover .activity-actions { opacity: 1; }
+.mini-btn {
+  width: 22px; height: 22px; border-radius: 4px; border: none;
+  background: var(--jesa-gray-bg); color: var(--jesa-text-muted); font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  transition: all 0.1s;
+}
+.mini-btn:hover { background: var(--jesa-navy); color: var(--jesa-white); }
+.mini-btn.danger { background: #FEE2E2; color: #DC2626; }
+.mini-btn.danger:hover { background: #DC2626; color: var(--jesa-white); }
+
+/* CLASH CARDS */
+.clash-card {
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+  border: 1px solid; border-left-width: 4px;
+  background: var(--jesa-white);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.clash-card.critical { border-color: #FCA5A5; border-left-color: #DC2626; background: #FEF2F2; }
+.clash-card.high { border-color: #FCD34D; border-left-color: #F59E0B; background: #FFFBEB; }
+.clash-card.medium { border-color: #93C5FD; border-left-color: #3B82F6; background: #EFF6FF; }
+.clash-card.low { border-color: #BBF7D0; border-left-color: #16A34A; background: #F0FDF4; }
+.clash-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+}
+.clash-title-block { display: flex; align-items: center; gap: 10px; }
+.clash-icon { font-size: 20px; }
+.clash-title { font-size: 13px; font-weight: 700; color: var(--jesa-navy); font-family: 'Inter', sans-serif; }
+.clash-meta { font-size: 10px; color: var(--jesa-text-muted); margin-top: 3px; font-weight: 500; }
+.severity-badge {
+  font-size: 9px; font-weight: 800; padding: 4px 9px; border-radius: 4px; border: 1px solid;
+  letter-spacing: 0.5px;
+}
+.clash-status-badge {
+  font-size: 9px; font-weight: 700; padding: 4px 9px; border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+.clash-description { font-size: 12px; color: var(--jesa-text); line-height: 1.55; margin-bottom: 12px; font-family: 'Inter', sans-serif; }
+.clash-resolution {
+  background: var(--jesa-cream); border-radius: 6px; padding: 10px 12px;
+  border-left: 3px solid var(--jesa-lime-dark); margin-bottom: 10px;
+}
+.resolution-label { font-size: 10px; color: var(--jesa-navy); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.3px; }
+.resolution-text { font-size: 11px; color: var(--jesa-text); font-family: 'Inter', sans-serif; line-height: 1.5; }
+.clash-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-mitigate {
+  background: #FEF3C7; border: 1px solid #FCD34D;
+  border-radius: 6px; color: #92400E; padding: 7px 14px;
+  font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 600;
+  transition: all 0.15s;
+}
+.btn-mitigate:hover { background: #FDE68A; }
+.btn-resolve {
+  background: var(--jesa-lime); border: 1px solid var(--jesa-lime-dark);
+  border-radius: 6px; color: var(--jesa-navy); padding: 7px 14px;
+  font-size: 11px; font-family: 'Inter', sans-serif; font-weight: 700;
+  transition: all 0.15s;
+}
+.btn-resolve:hover { background: var(--jesa-lime-bright); }
+
+/* AUTO-DETECTED CLASH BANNER */
+.auto-clash-banner {
+  background: #FFFBEB; border: 1px solid #FCD34D;
+  border-radius: 10px; padding: 14px; margin-bottom: 16px;
+}
+.auto-clash-title {
+  font-size: 12px; font-weight: 700; color: #92400E; margin-bottom: 10px;
+  font-family: 'Inter', sans-serif; letter-spacing: 0.3px;
+}
+.auto-clash-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px; background: var(--jesa-white); border: 1px solid #FDE68A; border-radius: 6px;
+  margin-bottom: 6px; flex-wrap: wrap; gap: 8px;
+}
+.btn-declare-mini {
+  background: #F59E0B; border: none;
+  border-radius: 4px; color: var(--jesa-white); padding: 5px 12px; font-size: 10px;
+  font-weight: 700; transition: all 0.15s;
+}
+.btn-declare-mini:hover { background: #D97706; }
+
+/* HEATMAP */
+.heatmap-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.heatmap-cell {
+  border-radius: 10px; padding: 14px; border: 1px solid var(--jesa-gray-border);
+  background: var(--jesa-white);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: all 0.15s;
+}
+.heatmap-cell:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.heatmap-cell.empty { opacity: 0.55; background: var(--jesa-gray-bg); }
+.heatmap-cell.medium { border-color: #F59E0B; background: #FFFBEB; }
+.heatmap-cell.clash { border-color: #DC2626; background: #FEF2F2; }
+.heatmap-header {
+  display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;
+}
+.mini-progress-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.mini-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.mini-name {
+  font-size: 9px; color: var(--jesa-text-muted); flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 500;
+}
+.mini-bar { width: 40px; height: 4px; background: var(--jesa-gray-bg); border-radius: 2px; flex-shrink: 0; }
+.mini-fill { height: 100%; border-radius: 2px; }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(10,37,64,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+  backdrop-filter: blur(4px);
+}
+.modal {
+  background: var(--jesa-white); border: 1px solid var(--jesa-gray-border); border-radius: 14px;
+  padding: 28px; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(10,37,64,0.3);
+}
+.modal-close {
+  position: absolute; top: 16px; right: 16px; background: var(--jesa-gray-bg);
+  border: none; border-radius: 50%; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--jesa-text-muted); font-size: 18px;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: var(--jesa-navy); color: var(--jesa-white); }
+.modal-title {
+  font-size: 17px; font-weight: 800; color: var(--jesa-navy); margin-bottom: 22px;
+  font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px;
+  letter-spacing: -0.3px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--jesa-lime);
+}
+.modal-title.danger { color: #DC2626; border-bottom-color: #DC2626; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-field { margin-bottom: 10px; }
+.form-field.full { grid-column: 1 / -1; }
+.form-label {
+  font-size: 10px; color: var(--jesa-navy); display: block; margin-bottom: 6px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%; background: var(--jesa-cream); border: 1px solid var(--jesa-gray-border);
+  border-radius: 6px; color: var(--jesa-text); padding: 9px 11px; font-size: 12px;
+  box-sizing: border-box;
+  transition: all 0.15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none; border-color: var(--jesa-lime);
+  box-shadow: 0 0 0 3px rgba(196,216,46,0.2);
+  background: var(--jesa-white);
+}
+.form-textarea { resize: vertical; font-family: 'Inter', sans-serif; }
+.form-range { width: 100%; accent-color: var(--jesa-lime-dark); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--jesa-gray-border); }
+.btn-cancel {
+  background: var(--jesa-gray-bg); border: 1px solid var(--jesa-gray-border); border-radius: 6px;
+  color: var(--jesa-text-muted); padding: 9px 22px; font-size: 12px;
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  transition: all 0.15s;
+}
+.btn-cancel:hover { background: var(--jesa-gray-border); color: var(--jesa-navy); }
+.btn-save {
+  background: var(--jesa-navy); border: none;
+  border-radius: 6px; color: var(--jesa-white); padding: 9px 26px;
+  font-size: 12px; font-weight: 700; font-family: 'Inter', sans-serif;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.btn-save:hover { background: var(--jesa-navy-light); }
+.btn-save:disabled { opacity: 0.4; background: var(--jesa-gray-border); color: var(--jesa-text-soft); cursor: not-allowed; }
+.btn-save.danger { background: #DC2626; }
+.btn-save.danger:hover { background: #B91C1C; }
+.contractor-toggle-list { display: flex; gap: 6px; flex-wrap: wrap; }
+.contractor-toggle {
+  padding: 6px 13px; border-radius: 6px; font-size: 11px;
+  background: var(--jesa-cream); border: 1px solid var(--jesa-gray-border); color: var(--jesa-text-muted);
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  transition: all 0.15s;
+}
+.contractor-toggle:hover { border-color: var(--jesa-navy); }
+.contractor-toggle.active { font-weight: 700; }
+
+.empty-state { text-align: center; padding: 60px; color: var(--jesa-text-muted); font-weight: 500; }
+
+/* IMPORT */
+.import-section { margin-bottom: 18px; }
+.import-section-title {
+  font-size: 11px; font-weight: 700; color: var(--jesa-navy);
+  margin-bottom: 10px; letter-spacing: 0.6px;
+  font-family: 'Inter', sans-serif; text-transform: uppercase;
+}
+.dropzone {
+  border: 2px dashed var(--jesa-gray-border); border-radius: 12px;
+  padding: 36px 20px; text-align: center; transition: all 0.2s;
+  background: var(--jesa-cream); cursor: pointer;
+}
+.dropzone:hover, .dropzone.drag-over {
+  border-color: var(--jesa-lime); background: rgba(196,216,46,0.08);
+  transform: scale(1.01);
+}
+.dropzone-icon { font-size: 38px; margin-bottom: 10px; }
+.dropzone-text { font-size: 13px; color: var(--jesa-navy); margin-bottom: 6px; font-family: 'Inter', sans-serif; font-weight: 600; }
+.dropzone-hint { font-size: 11px; color: var(--jesa-text-muted); }
+.dropzone input[type="file"] { display: none; }
+
+.import-result {
+  background: #F0FDF4; border: 1px solid #BBF7D0;
+  border-radius: 8px; padding: 12px 14px; margin-top: 10px;
+}
+.import-result.error {
+  background: #FEF2F2; border-color: #FCA5A5;
+}
+.import-result-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; font-family: 'Inter', sans-serif; }
+.import-result-line { font-size: 11px; color: var(--jesa-text-muted); margin-bottom: 3px; line-height: 1.5; }
+
+.weeks-bar {
+  background: var(--jesa-white); border: 1px solid var(--jesa-gray-border); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.weeks-label {
+  font-size: 10px; color: var(--jesa-navy); text-transform: uppercase;
+  letter-spacing: 0.5px; font-weight: 700;
+}
+.week-pill {
+  background: var(--jesa-cream); border: 1px solid var(--jesa-gray-border); border-radius: 14px;
+  padding: 5px 14px; font-size: 11px; color: var(--jesa-text-muted);
+  cursor: pointer; transition: all 0.15s;
+  font-family: 'Inter', sans-serif; font-weight: 600;
+}
+.week-pill.active {
+  background: var(--jesa-lime); border-color: var(--jesa-lime-dark); color: var(--jesa-navy); font-weight: 800;
+}
+.week-pill:hover { color: var(--jesa-navy); border-color: var(--jesa-navy); }
+.week-pill .week-count { color: var(--jesa-text-soft); margin-left: 6px; font-size: 10px; }
+
+.archive-list {
+  max-height: 300px; overflow-y: auto;
+  background: var(--jesa-cream); border: 1px solid var(--jesa-gray-border); border-radius: 8px;
+  padding: 8px;
+}
+.archive-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 12px; border-radius: 4px; margin-bottom: 3px;
+  background: var(--jesa-white);
+  border: 1px solid var(--jesa-gray-border);
+}
+.archive-row:hover { border-color: var(--jesa-navy); }
+.archive-row-info {
+  display: flex; align-items: center; gap: 10px; flex: 1;
+  font-size: 11px; font-family: 'Inter', sans-serif; color: var(--jesa-text);
+  font-weight: 500;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--jesa-gray-bg); }
+::-webkit-scrollbar-thumb { background: var(--jesa-gray-border); border-radius: 5px; border: 2px solid var(--jesa-gray-bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--jesa-navy); }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const CONTRACTORS = [
+  { id: "sogea", name: "SOGEA", color: "#E85D04", shortName: "SOG" },
+  { id: "scif", name: "SCIF", color: "#2196F3", shortName: "SCF" },
+  { id: "cegelec", name: "CEGELEC", color: "#4CAF50", shortName: "CEG" },
+  { id: "ventec", name: "VENTEC", color: "#9C27B0", shortName: "VEN" },
+  { id: "butec", name: "BUTEC", color: "#F44336", shortName: "BUT" },
+  { id: "aicm", name: "AICM", color: "#FF9800", shortName: "AIC" },
+  { id: "scc", name: "SCC", color: "#607D8B", shortName: "SCC" },
+  { id: "astri", name: "ASTRI", color: "#795548", shortName: "AST" },
+];
+
+const AREAS = [
+  { id: "a100", name: "Admin & Workshop (A100)", zone: "OSBL" },
+  { id: "a300", name: "AHF Storage (A300)", zone: "ISBL" },
+  { id: "a500", name: "Substation (A500)", zone: "OSBL" },
+  { id: "b200", name: "Process Building (B200)", zone: "ISBL" },
+  { id: "b300", name: "Filtration (B300)", zone: "ISBL" },
+  { id: "pr01", name: "Pipe Rack PR-01", zone: "OSBL" },
+  { id: "pr02", name: "Pipe Rack PR-02A/B/C/D", zone: "OSBL" },
+  { id: "pr03", name: "Pipe Rack PR-03", zone: "OSBL" },
+  { id: "pr04", name: "Pipe Rack PR-04", zone: "OSBL" },
+  { id: "pr06", name: "Pipe Rack PR-06", zone: "OSBL" },
+  { id: "irc", name: "IRC-01 / IRC-02", zone: "ISBL" },
+  { id: "sa98", name: "SA 98% Storage", zone: "OSBL" },
+  { id: "sa75", name: "SA 75% Storage", zone: "OSBL" },
+  { id: "fsa", name: "FSA Storage", zone: "OSBL" },
+  { id: "silica", name: "Silica Slurry Storage", zone: "OSBL" },
+  { id: "effluent", name: "Liquid Effluent", zone: "OSBL" },
+  { id: "rawwater", name: "Raw Water", zone: "OSBL" },
+  { id: "cooling", name: "Cooling Tower", zone: "OSBL" },
+  { id: "refrig", name: "Refrigeration Unit", zone: "OSBL" },
+  { id: "water_treat", name: "Water Treatment", zone: "OSBL" },
+  { id: "air_comp", name: "Air Compressor", zone: "OSBL" },
+  { id: "fire_pump", name: "Fire Pump Area", zone: "OSBL" },
+  { id: "vrd", name: "VRD / Roads", zone: "OSBL" },
+  { id: "dsa", name: "DSA Area", zone: "OSBL" },
+  { id: "workshop2", name: "2nd Workshop", zone: "OSBL" },
+];
+
+const DISCIPLINES = ["Civil", "Structural", "Mechanical", "Piping", "Electrical", "Instrumentation", "HVAC", "Fire Fighting", "Painting", "Insulation"];
+
+const PRIORITIES = [
+  { id: 1, label: "P1 — Critical Path", color: "#D32F2F" },
+  { id: 2, label: "P2 — Near Critical", color: "#E65100" },
+  { id: 3, label: "P3 — Normal", color: "#1565C0" },
+  { id: 4, label: "P4 — Low", color: "#558B2F" },
+];
+
+const CLASH_TYPES = [
+  { id: "spatial", label: "Spatial / Access", icon: "⚠️" },
+  { id: "crane", label: "Grue / Levage", icon: "🏗️" },
+  { id: "scaffold", label: "Échafaudage", icon: "🔧" },
+  { id: "utility", label: "Utilités", icon: "⚡" },
+  { id: "hotwork", label: "Hot Work / Permis", icon: "🔥" },
+  { id: "excavation", label: "Excavation", icon: "🚜" },
+  { id: "handover", label: "Hand-Over", icon: "🤝" },
+];
+
+const STATUS_OPTIONS = [
+  { id: "planned", label: "Planifié", color: "#1E40AF", bg: "#DBEAFE" },
+  { id: "in_progress", label: "En cours", color: "#92400E", bg: "#FEF3C7" },
+  { id: "completed", label: "Terminé", color: "#166534", bg: "#DCFCE7" },
+  { id: "blocked", label: "Bloqué", color: "#991B1B", bg: "#FEE2E2" },
+  { id: "delayed", label: "Retardé", color: "#9D174D", bg: "#FCE7F3" },
+];
+
+let activities = [
+  { id: 1, area: "a500", contractor: "sogea", discipline: "Civil", activity: "Maçonnerie et enduit monocouche substation", priority: 2, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-05", progress: 65, notes: "" },
+  { id: 2, area: "a500", contractor: "ventec", discipline: "HVAC", activity: "Pose gaine désenfumage MCC Room", priority: 1, status: "in_progress", startDate: "2026-04-20", endDate: "2026-05-02", progress: 100, notes: "" },
+  { id: 3, area: "a500", contractor: "butec", discipline: "Fire Fighting", activity: "Pose conduite GALVA + tirage câble MCC Room", priority: 2, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-03", progress: 50, notes: "" },
+  { id: 4, area: "a100", contractor: "sogea", discipline: "Civil", activity: "Faux plafond bâtiment administration", priority: 3, status: "in_progress", startDate: "2026-04-20", endDate: "2026-05-10", progress: 9, notes: "" },
+  { id: 5, area: "a100", contractor: "ventec", discipline: "HVAC", activity: "Pose grilles aérauliques administration", priority: 3, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-08", progress: 70, notes: "" },
+  { id: 6, area: "a100", contractor: "butec", discipline: "Fire Fighting", activity: "Pose RIA + tube Sch40 administration", priority: 3, status: "completed", startDate: "2026-04-14", endDate: "2026-04-21", progress: 100, notes: "" },
+  { id: 7, area: "water_treat", contractor: "sogea", discipline: "Civil", activity: "Remblai et béton structure Water Treatment", priority: 2, status: "in_progress", startDate: "2026-04-18", endDate: "2026-05-15", progress: 40, notes: "" },
+  { id: 8, area: "air_comp", contractor: "sogea", discipline: "Civil", activity: "Dallage et maçonnerie Air Compressor", priority: 2, status: "in_progress", startDate: "2026-04-20", endDate: "2026-05-08", progress: 30, notes: "" },
+  { id: 9, area: "pr03", contractor: "scif", discipline: "Structural", activity: "Lifting bridge PR-03", priority: 1, status: "in_progress", startDate: "2026-04-21", endDate: "2026-04-28", progress: 60, notes: "Grue nécessaire" },
+  { id: 10, area: "pr03", contractor: "aicm", discipline: "Piping", activity: "Échafaudage suspendu rack 8001", priority: 1, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-15", progress: 20, notes: "" },
+  { id: 11, area: "b300", contractor: "scif", discipline: "Structural", activity: "Steel structure Filtration Level 1 + handrail", priority: 1, status: "in_progress", startDate: "2026-04-20", endDate: "2026-05-10", progress: 25, notes: "" },
+  { id: 12, area: "cooling", contractor: "cegelec", discipline: "Civil", activity: "Ferraillage et coffrage semelles cooling tower", priority: 2, status: "in_progress", startDate: "2026-04-20", endDate: "2026-05-02", progress: 55, notes: "" },
+  { id: 13, area: "refrig", contractor: "cegelec", discipline: "Civil", activity: "Coffrage voile LT électrique / mécanique", priority: 1, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-05", progress: 35, notes: "Sous-traitant DIDNA" },
+  { id: 14, area: "fire_pump", contractor: "butec", discipline: "Civil", activity: "Ferraillage coffrage poteaux local pompe", priority: 2, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-10", progress: 20, notes: "" },
+  { id: 15, area: "fire_pump", contractor: "butec", discipline: "Mechanical", activity: "Montage réservoir incendie 1250 m³", priority: 1, status: "in_progress", startDate: "2026-04-18", endDate: "2026-05-20", progress: 70, notes: "" },
+  { id: 16, area: "sa75", contractor: "scif", discipline: "Mechanical", activity: "Welding shell tank 75% A & B", priority: 2, status: "in_progress", startDate: "2026-04-14", endDate: "2026-05-05", progress: 80, notes: "" },
+  { id: 17, area: "fsa", contractor: "scif", discipline: "Mechanical", activity: "Welding nozzles + spiral ladder FSA A&B", priority: 3, status: "in_progress", startDate: "2026-04-20", endDate: "2026-04-30", progress: 90, notes: "" },
+  { id: 18, area: "rawwater", contractor: "scif", discipline: "Mechanical", activity: "Shell 5 adjustment + welding Raw Water Tank", priority: 2, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-05", progress: 45, notes: "" },
+  { id: 19, area: "vrd", contractor: "sogea", discipline: "Civil", activity: "Assainissement eaux pluviales + VRD", priority: 3, status: "in_progress", startDate: "2026-04-18", endDate: "2026-06-01", progress: 49, notes: "" },
+  { id: 20, area: "vrd", contractor: "butec", discipline: "Fire Fighting", activity: "Réseau souterrain protection incendie extérieur", priority: 2, status: "in_progress", startDate: "2026-04-14", endDate: "2026-05-30", progress: 10, notes: "Retard important" },
+  { id: 21, area: "workshop2", contractor: "sogea", discipline: "Civil", activity: "Terrassement + béton structure 2ème atelier", priority: 3, status: "in_progress", startDate: "2026-04-20", endDate: "2026-05-20", progress: 15, notes: "" },
+  { id: 22, area: "silica", contractor: "scif", discipline: "Mechanical", activity: "Roof adjustment Silica tanks 1 & 2", priority: 3, status: "completed", startDate: "2026-04-14", endDate: "2026-04-21", progress: 100, notes: "" },
+  { id: 23, area: "effluent", contractor: "scif", discipline: "Mechanical", activity: "Lifting & welding shell 4 Liquid Effluent", priority: 2, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-02", progress: 37, notes: "" },
+  { id: 24, area: "irc", contractor: "scif", discipline: "Structural", activity: "Steel structure + bridge IRC 01/02", priority: 1, status: "in_progress", startDate: "2026-04-21", endDate: "2026-05-10", progress: 30, notes: "" },
+  { id: 25, area: "pr02", contractor: "scif", discipline: "Structural", activity: "Remaining steel + bolt tightening PR-02A", priority: 2, status: "in_progress", startDate: "2026-04-20", endDate: "2026-05-05", progress: 95, notes: "" },
+];
+
+let clashes = [
+  { id: 1, area: "a500", type: "spatial", contractors: ["sogea", "ventec", "butec"], description: "3 contractors simultanément dans la substation: SOGEA (maçonnerie), VENTEC (HVAC gaines), BUTEC (détection incendie). Risque d'encombrement des niveaux RDC et MCC.", severity: "high", status: "open", createdDate: "2026-04-20", resolution: "Planification par niveaux: SOGEA RDC matin, VENTEC MCC après-midi, BUTEC cable vault nuit" },
+  { id: 2, area: "pr03", type: "crane", contractors: ["scif", "aicm"], description: "SCIF lifting bridge PR-03 nécessite grue mobile dans la même zone où AICM installe échafaudage rack 8001. Exclusion zone grue en conflit.", severity: "critical", status: "open", createdDate: "2026-04-21", resolution: "Séquencer: SCIF lifting D'ABORD (S17), AICM échafaudage APRÈS" },
+  { id: 3, area: "vrd", type: "excavation", contractors: ["sogea", "butec"], description: "SOGEA excavation eaux pluviales et BUTEC tranchées réseau incendie extérieur dans la même emprise VRD. Risque de dommages croisés.", severity: "high", status: "mitigated", createdDate: "2026-04-18", resolution: "Découpage zones: SOGEA côté Est, BUTEC côté Ouest. Points de croisement traités ensemble." },
+  { id: 4, area: "a100", type: "scaffold", contractors: ["sogea", "ventec"], description: "SOGEA faux plafond et VENTEC pose grilles aérauliques nécessitent échafaudage au même endroit dans l'administration.", severity: "medium", status: "open", createdDate: "2026-04-21", resolution: "VENTEC grilles en premier (accès plafond), puis SOGEA faux plafond après" },
+  { id: 5, area: "fire_pump", type: "spatial", contractors: ["butec", "sogea"], description: "BUTEC montage réservoir 1250m³ et construction local pompe dans même périmètre. SOGEA non directement impliqué mais accès VRD croise la zone.", severity: "medium", status: "open", createdDate: "2026-04-19", resolution: "" },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = {
+  tab: "planning",
+  filterContractor: "all",
+  filterArea: "all",
+  filterZone: "all",
+  filterStatus: "all",
+  viewMode: "area",
+  selectedDate: "2026-04-29",
+  currentWeek: "W18-2026",
+  modal: null,
+  editingId: null,
+  importStaging: null,
+  importErrors: [],
+  importResult: null,
+  // OneDrive sync
+  syncStatus: "idle",  // idle | loading | success | error
+  syncMessage: "",
+  lastSynced: null,
+};
+
+// Import history
+let importHistory = [];
+
+// ─── ONEDRIVE SYNC ────────────────────────────────────────────────────────────
+const ONEDRIVE_SHARE_URL = "https://jesagroup-my.sharepoint.com/:u:/p/mohamed_senhadji/IQCTxyJaewDAR6KEDLrh_e6tAU7O0e1SW88ujdFyn5V_u_4?e=odA9Bo";
+const PROXY = "https://api.allorigins.win/raw?url=";
+
+function getDirectUrl(shareUrl) {
+  const encoded = btoa(shareUrl).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+  return `https://api.onedrive.com/v1.0/shares/u!${encoded}/root/content`;
+}
+
+async function loadFromOneDrive() {
+  state.syncStatus = "loading";
+  state.syncMessage = "Chargement depuis OneDrive...";
+  render();
+  try {
+    const directUrl = getDirectUrl(ONEDRIVE_SHARE_URL);
+    const res = await fetch(PROXY + encodeURIComponent(directUrl));
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    let data = { activities: [], clashes: [], importHistory: [], lastUpdated: "" };
+    try { data = JSON.parse(text); } catch(e) { /* empty file */ }
+    if (Array.isArray(data.activities) && data.activities.length > 0) activities = data.activities;
+    if (Array.isArray(data.clashes) && data.clashes.length > 0) clashes = data.clashes;
+    if (Array.isArray(data.importHistory)) importHistory = data.importHistory;
+    state.lastSynced = data.lastUpdated || new Date().toISOString();
+    state.syncStatus = "success";
+    state.syncMessage = "Données chargées depuis OneDrive ✓";
+    setTimeout(() => { state.syncStatus = "idle"; state.syncMessage = ""; render(); }, 4000);
+  } catch(err) {
+    state.syncStatus = "error";
+    state.syncMessage = "Erreur: " + err.message + " — vérifiez le lien OneDrive";
+    setTimeout(() => { state.syncStatus = "idle"; state.syncMessage = ""; render(); }, 6000);
+  }
+  render();
+}
+
+function exportJSON() {
+  const data = {
+    activities, clashes, importHistory,
+    lastUpdated: new Date().toISOString(),
+    week: state.currentWeek,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "ahf_data.json"; a.click();
+  URL.revokeObjectURL(url);
+  state.syncStatus = "success";
+  state.syncMessage = "Fichier exporté ✓ — glissez-le dans OneDrive pour partager";
+  render();
+  setTimeout(() => { state.syncStatus = "idle"; state.syncMessage = ""; render(); }, 6000);
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+const getContractor = id => CONTRACTORS.find(c => c.id === id);
+const getArea = id => AREAS.find(a => a.id === id);
+const getPriority = id => PRIORITIES.find(p => p.id === id);
+const getStatus = id => STATUS_OPTIONS.find(s => s.id === id);
+const getClashType = id => CLASH_TYPES.find(t => t.id === id);
+
+const escapeHtml = s => String(s ?? "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+function getStats() {
+  const activeClashes = clashes.filter(c => c.status === "open").length;
+  const criticalClashes = clashes.filter(c => c.severity === "critical" && c.status !== "resolved").length;
+  const todayActivities = activities.filter(a => a.status !== "completed").length;
+  const blockedActivities = activities.filter(a => a.status === "blocked").length;
+  const areaContractors = {};
+  activities.filter(a => a.status !== "completed").forEach(a => {
+    if (!areaContractors[a.area]) areaContractors[a.area] = new Set();
+    areaContractors[a.area].add(a.contractor);
+  });
+  const hotAreas = Object.values(areaContractors).filter(s => s.size >= 2).length;
+  return { activeClashes, criticalClashes, todayActivities, blockedActivities, hotAreas };
+}
+
+function getFilteredActivities() {
+  return activities.filter(a => {
+    if (state.filterContractor !== "all" && a.contractor !== state.filterContractor) return false;
+    if (state.filterArea !== "all" && a.area !== state.filterArea) return false;
+    if (state.filterZone !== "all") {
+      const area = getArea(a.area);
+      if (area && area.zone !== state.filterZone) return false;
+    }
+    if (state.filterStatus !== "all" && a.status !== state.filterStatus) return false;
+    return true;
+  });
+}
+
+function getPotentialClashes() {
+  const areaContractors = {};
+  activities.filter(a => a.status !== "completed").forEach(a => {
+    if (!areaContractors[a.area]) areaContractors[a.area] = new Set();
+    areaContractors[a.area].add(a.contractor);
+  });
+  return Object.entries(areaContractors)
+    .filter(([, c]) => c.size >= 2)
+    .map(([areaId, contractors]) => ({
+      areaId,
+      area: getArea(areaId),
+      contractors: [...contractors],
+      count: contractors.size,
+      existingClash: clashes.find(c => c.area === areaId && c.status !== "resolved"),
+    }));
+}
+
+// ─── RENDERERS ───────────────────────────────────────────────────────────────
+function renderHeader() {
+  const stats = getStats();
+  const cards = [
+    { label: "Activités actives", value: stats.todayActivities, color: "#A8E6F7" },
+    { label: "Zones multi-contractors", value: stats.hotAreas, color: "#FCD34D" },
+    { label: "Clashs ouverts", value: stats.activeClashes, color: "#FCA5A5" },
+    { label: "Clashs critiques", value: stats.criticalClashes, color: "#F87171" },
+    { label: "Bloquées", value: stats.blockedActivities, color: "#D8B4FE" },
+  ];
+  // JESA wordmark — bold sans-serif rendering of the actual JESA logo
+  // J with the characteristic hook, then E S A, plus the signature lime dot at bottom-right
+  const jesaLogo = `
+    <svg width="100" height="38" viewBox="0 0 100 38" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+      <text x="0" y="30" font-family="Arial Black, Arial, sans-serif" font-size="32" font-weight="900"
+            fill="white" letter-spacing="-1">JESA</text>
+      <circle cx="91" cy="28" r="3.2" fill="#C4D82E"/>
+    </svg>`;
+  return `
+    <div class="header">
+      <div class="header-top">
+        <div class="logo-block">
+          ${jesaLogo}
+          <div class="divider-vert"></div>
+          <div class="logo">AHF</div>
+          <div>
+            <div class="title">AHF/DSA — Planning Level 4</div>
+            <div class="subtitle">Clash Management & Daily Coordination · Jorf Lasfar</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+          <button class="btn-import" onclick="openImportModal()" title="Importer les fichiers Excel des contractors">
+            ⇪ Importer Excel
+          </button>
+          <button class="btn-week" onclick="openWeeksModal()" title="Gestion des semaines">
+            📅 ${escapeHtml(state.currentWeek)}
+          </button>
+          <button class="btn-template" onclick="downloadTemplateInfo()" title="Template Excel à envoyer aux contractors">
+            ⬇ Template
+          </button>
+          <input type="date" class="date-input" value="${state.selectedDate}" onchange="updateDate(this.value)">
+        </div>
+      </div>
+      <div class="stats-bar">
+        ${cards.map(c => `
+          <div class="stat-card">
+            <div class="stat-value" style="color:${c.color}">${c.value}</div>
+            <div class="stat-label">${c.label}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>`;
+}
+
+function renderTabs() {
+  const stats = getStats();
+  const tabs = [
+    { id: "planning", label: "📋 Planning L4" },
+    { id: "clashes", label: `⚠️ Clashs (${stats.activeClashes})` },
+    { id: "heatmap", label: "🔥 Heatmap Zones" },
+  ];
+  return `
+    <div class="tabs">
+      ${tabs.map(t => `
+        <button class="tab ${state.tab === t.id ? "active" : ""}" onclick="setTab('${t.id}')">${t.label}</button>
+      `).join("")}
+    </div>`;
+}
+
+function renderFilters() {
+  return `
+    <div class="filters-bar">
+      <span class="filter-label">⚙️ FILTRES</span>
+      <select class="filter-select" onchange="setFilter('filterZone', this.value)">
+        ${["all", "ISBL", "OSBL"].map(z => `<option value="${z}" ${state.filterZone === z ? "selected" : ""}>${z === "all" ? "Toutes zones" : z}</option>`).join("")}
+      </select>
+      <select class="filter-select" onchange="setFilter('filterContractor', this.value)">
+        <option value="all">Tous contractors</option>
+        ${CONTRACTORS.map(c => `<option value="${c.id}" ${state.filterContractor === c.id ? "selected" : ""}>${c.name}</option>`).join("")}
+      </select>
+      <select class="filter-select" onchange="setFilter('filterArea', this.value)">
+        <option value="all">Toutes areas</option>
+        ${AREAS.map(a => `<option value="${a.id}" ${state.filterArea === a.id ? "selected" : ""}>${escapeHtml(a.name)}</option>`).join("")}
+      </select>
+      <select class="filter-select" onchange="setFilter('filterStatus', this.value)">
+        <option value="all">Tous statuts</option>
+        ${STATUS_OPTIONS.map(s => `<option value="${s.id}" ${state.filterStatus === s.id ? "selected" : ""}>${s.label}</option>`).join("")}
+      </select>
+      <div style="margin-left:auto; display:flex; gap:4px">
+        <button class="view-toggle ${state.viewMode === "area" ? "active" : ""}" onclick="setViewMode('area')" title="Vue par zone">▦</button>
+        <button class="view-toggle ${state.viewMode === "list" ? "active" : ""}" onclick="setViewMode('list')" title="Vue liste">☰</button>
+      </div>
+      <button class="btn-add" onclick="openActivityModal()">+ Activité</button>
+    </div>`;
+}
+
+function renderActivityRow(act, showArea) {
+  const c = getContractor(act.contractor);
+  const a = getArea(act.area);
+  const p = getPriority(act.priority);
+  const s = getStatus(act.status);
+  const progressColor = act.progress >= 90 ? "#16A34A" : act.progress >= 50 ? "#F59E0B" : "#DC2626";
+  return `
+    <div class="activity-row ${act.status === "blocked" ? "blocked" : ""}" style="border-left-color:${c?.color || "#444"}">
+      <div class="priority-dot" style="background:${p?.color}" title="${p?.label}"></div>
+      <span class="contractor-tag" style="background:${c?.color}22;color:${c?.color}">${c?.shortName}</span>
+      ${showArea ? `<span class="area-tag-list">${escapeHtml(a?.name?.split("(")[0]?.trim().substring(0, 20) || "")}</span>` : ""}
+      <span class="discipline-tag">${escapeHtml(act.discipline)}</span>
+      <span class="activity-name" title="${escapeHtml(act.activity)}">${escapeHtml(act.activity)}</span>
+      <span class="status-badge" style="background:${s?.bg};color:${s?.color}">${s?.label}</span>
+      <div class="progress-block">
+        <div class="progress-bar"><div class="progress-fill" style="width:${act.progress}%;background:${progressColor}"></div></div>
+        <span class="progress-text">${act.progress}%</span>
+      </div>
+      <span class="dates-text">${act.startDate?.slice(5) || ""} → ${act.endDate?.slice(5) || ""}</span>
+      <div class="activity-actions">
+        <button class="mini-btn" onclick="updateProgress(${act.id}, 10)" title="+10%">+</button>
+        <button class="mini-btn" onclick="openActivityModal(${act.id})" title="Modifier">✎</button>
+        <button class="mini-btn danger" onclick="deleteActivity(${act.id})" title="Supprimer">×</button>
+      </div>
+    </div>`;
+}
+
+function renderPlanningTab() {
+  const filtered = getFilteredActivities();
+  const potential = getPotentialClashes();
+
+  if (filtered.length === 0) {
+    return renderFilters() + `<div class="empty-state">Aucune activité ne correspond aux filtres sélectionnés</div>`;
+  }
+
+  if (state.viewMode === "list") {
+    return renderFilters() + `
+      <div>
+        ${filtered.sort((a, b) => a.priority - b.priority).map(a => renderActivityRow(a, true)).join("")}
+      </div>`;
+  }
+
+  // Area view
+  const grouped = {};
+  filtered.forEach(a => {
+    if (!grouped[a.area]) grouped[a.area] = [];
+    grouped[a.area].push(a);
+  });
+
+  const sortedAreas = Object.entries(grouped).sort((a, b) => b[1].length - a[1].length);
+
+  return renderFilters() + sortedAreas.map(([areaId, acts]) => {
+    const area = getArea(areaId);
+    const contractorsInArea = [...new Set(acts.map(a => a.contractor))];
+    const potClash = potential.find(p => p.areaId === areaId);
+    const existingClash = clashes.find(c => c.area === areaId && c.status !== "resolved");
+    const hasMultiple = contractorsInArea.length >= 2;
+    const cardClass = hasMultiple ? (existingClash ? "has-clash" : "has-warning") : "";
+    const headerClass = hasMultiple ? (existingClash ? "clash" : "warning") : "";
+
+    return `
+      <div class="area-card ${cardClass}">
+        <div class="area-header ${headerClass}">
+          <div class="area-title-block">
+            <span class="zone-badge ${area?.zone}">${area?.zone}</span>
+            <span class="area-name">${escapeHtml(area?.name || areaId)}</span>
+            ${hasMultiple ? `
+              <span class="warning-pill ${existingClash ? "clash" : "warning"}">
+                ${existingClash ? "⚠️ CLASH DÉCLARÉ" : `⚡ ${contractorsInArea.length} contractors`}
+              </span>` : ""}
+          </div>
+          <div class="contractor-pills">
+            ${contractorsInArea.map(cId => {
+              const c = getContractor(cId);
+              return `<span class="contractor-pill" style="background:${c?.color}22;color:${c?.color}">${c?.shortName}</span>`;
+            }).join("")}
+          </div>
+        </div>
+        <div style="padding:8px 12px">
+          ${acts.sort((a, b) => a.priority - b.priority).map(a => renderActivityRow(a, false)).join("")}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function renderClashesTab() {
+  const potential = getPotentialClashes().filter(p => !p.existingClash);
+  const sortedClashes = [...clashes].sort((a, b) => {
+    const sev = { critical: 0, high: 1, medium: 2, low: 3 };
+    return (sev[a.severity] ?? 3) - (sev[b.severity] ?? 3);
+  });
+
+  return `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px">
+      <div style="font-size:11px; color:#6B7280">
+        ${clashes.filter(c => c.status !== "resolved").length} clashs actifs · ${clashes.filter(c => c.severity === "critical").length} critiques
+      </div>
+      <button class="btn-clash" onclick="openClashModal()">⚠ Déclarer un clash</button>
+    </div>
+
+    ${potential.length > 0 ? `
+      <div class="auto-clash-banner">
+        <div class="auto-clash-title">🔍 Clashs potentiels détectés automatiquement</div>
+        ${potential.map(p => `
+          <div class="auto-clash-row">
+            <div style="display:flex; align-items:center; gap:8px; flex:1; flex-wrap:wrap">
+              <span>⚡</span>
+              <span style="font-size:12px; font-family:'Inter', sans-serif"><b>${escapeHtml(p.area?.name || "")}</b> — ${p.count} contractors:</span>
+              <div style="display:flex; gap:4px">
+                ${p.contractors.map(cId => {
+                  const c = getContractor(cId);
+                  return `<span style="font-size:10px; padding:1px 6px; border-radius:3px; background:${c?.color}22; color:${c?.color}; font-weight:600">${c?.name}</span>`;
+                }).join("")}
+              </div>
+            </div>
+            <button class="btn-declare-mini" onclick="openClashModal(null, '${p.areaId}', ${JSON.stringify(p.contractors).replace(/"/g, "&quot;")})">Déclarer</button>
+          </div>
+        `).join("")}
+      </div>` : ""}
+
+    ${sortedClashes.map(clash => {
+      const area = getArea(clash.area);
+      const ct = getClashType(clash.type);
+      const sevLabels = { critical: "CRITIQUE", high: "ÉLEVÉ", medium: "MOYEN", low: "FAIBLE" };
+      const sevColors = { critical: { text: "#991B1B", border: "#DC2626" }, high: { text: "#92400E", border: "#F59E0B" }, medium: { text: "#1E40AF", border: "#3B82F6" }, low: { text: "#166534", border: "#16A34A" } };
+      const stLabels = { open: "Ouvert", mitigated: "Mitigé", resolved: "Résolu", critical: "Critique" };
+      const stColors = { open: { bg: "#FEE2E2", color: "#991B1B" }, mitigated: { bg: "#FEF3C7", color: "#92400E" }, resolved: { bg: "#DCFCE7", color: "#166534" }, critical: { bg: "#FEE2E2", color: "#7F1D1D" } };
+      const sc = sevColors[clash.severity] || sevColors.medium;
+      const stc = stColors[clash.status] || stColors.open;
+
+      return `
+        <div class="clash-card ${clash.severity}">
+          <div class="clash-header">
+            <div class="clash-title-block">
+              <span class="clash-icon">${ct?.icon}</span>
+              <div>
+                <div class="clash-title">${escapeHtml(area?.name || "")} — ${ct?.label}</div>
+                <div class="clash-meta">Déclaré le ${clash.createdDate} · #${clash.id}</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+              <span class="severity-badge" style="background:${clash.severity === "critical" ? "#FEE2E2" : clash.severity === "high" ? "#FEF3C7" : clash.severity === "medium" ? "#DBEAFE" : "#DCFCE7"};color:${sc.text};border-color:${sc.border}">${sevLabels[clash.severity]}</span>
+              <span class="clash-status-badge" style="background:${stc.bg};color:${stc.color}">${stLabels[clash.status]}</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:4px; margin-bottom:10px; flex-wrap:wrap">
+            ${clash.contractors.map(cId => {
+              const c = getContractor(cId);
+              return `<span style="font-size:10px; font-weight:600; padding:3px 10px; border-radius:4px; background:${c?.color}22; color:${c?.color}">${c?.name}</span>`;
+            }).join("")}
+          </div>
+          <div class="clash-description">${escapeHtml(clash.description)}</div>
+          ${clash.resolution ? `
+            <div class="clash-resolution">
+              <div class="resolution-label">💡 Résolution proposée</div>
+              <div class="resolution-text">${escapeHtml(clash.resolution)}</div>
+            </div>` : ""}
+          ${clash.status !== "resolved" ? `
+            <div class="clash-actions">
+              <button class="btn-mitigate" onclick="updateClashStatus(${clash.id}, 'mitigated')">Marquer mitigé</button>
+              <button class="btn-resolve" onclick="updateClashStatus(${clash.id}, 'resolved')">✓ Résolu</button>
+            </div>` : ""}
+        </div>`;
+    }).join("")}`;
+}
+
+function renderHeatmapTab() {
+  return `
+    <div style="font-size:11px; color:#6B7280; margin-bottom:16px">
+      Visualisation de la densité contractors par zone · Les zones en rouge ont des clashs déclarés
+    </div>
+    <div class="heatmap-grid">
+      ${AREAS.map(area => {
+        const acts = activities.filter(a => a.area === area.id && a.status !== "completed");
+        const contractorsHere = [...new Set(acts.map(a => a.contractor))];
+        const existingClash = clashes.find(c => c.area === area.id && c.status !== "resolved");
+        const intensity = contractorsHere.length;
+        const cellClass = intensity === 0 ? "empty" : (existingClash ? "clash" : (intensity >= 2 ? "medium" : ""));
+
+        return `
+          <div class="heatmap-cell ${cellClass}">
+            <div class="heatmap-header">
+              <div>
+                <span class="zone-badge ${area.zone}" style="margin-right:6px">${area.zone}</span>
+                <span style="font-size:12px; font-weight:600; color:#0A2540; font-family:'Inter', sans-serif">${escapeHtml(area.name)}</span>
+              </div>
+              ${existingClash ? '<span style="font-size:14px">⚠️</span>' : ""}
+            </div>
+            ${intensity === 0 ? `
+              <div style="font-size:10px; color:#9CA3AF">Aucune activité en cours</div>
+            ` : `
+              <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px">
+                ${contractorsHere.map(cId => {
+                  const c = getContractor(cId);
+                  const count = acts.filter(a => a.contractor === cId).length;
+                  return `<span style="font-size:10px; padding:2px 8px; border-radius:4px; background:${c?.color}22; color:${c?.color}; font-weight:600">${c?.shortName} (${count})</span>`;
+                }).join("")}
+              </div>
+              <div style="font-size:10px; color:#6B7280">${acts.length} activités · ${contractorsHere.length} contractor${contractorsHere.length > 1 ? "s" : ""}</div>
+              <div style="margin-top:8px">
+                ${acts.slice(0, 3).map(act => {
+                  const c = getContractor(act.contractor);
+                  const pColor = act.progress >= 80 ? "#16A34A" : act.progress >= 40 ? "#F59E0B" : "#DC2626";
+                  return `
+                    <div class="mini-progress-row">
+                      <div class="mini-dot" style="background:${c?.color}"></div>
+                      <div class="mini-name">${escapeHtml(act.activity)}</div>
+                      <div class="mini-bar"><div class="mini-fill" style="width:${act.progress}%;background:${pColor}"></div></div>
+                      <span style="font-size:9px; color:#6B7280; width:28px; text-align:right">${act.progress}%</span>
+                    </div>`;
+                }).join("")}
+                ${acts.length > 3 ? `<div style="font-size:9px; color:#9CA3AF; margin-top:2px">+${acts.length - 3} autres activités</div>` : ""}
+              </div>
+            `}
+          </div>`;
+      }).join("")}
+    </div>`;
+}
+
+// ─── MODALS ──────────────────────────────────────────────────────────────────
+function renderActivityModal() {
+  const editing = state.editingId ? activities.find(a => a.id === state.editingId) : null;
+  const form = state.modal.form || (editing ? { ...editing } : {
+    area: "", contractor: "", discipline: "", activity: "",
+    priority: 3, status: "planned", startDate: state.selectedDate,
+    endDate: "2026-05-10", progress: 0, notes: "",
+  });
+  state.modal.form = form;
+
+  return `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-title">${editing ? "Modifier l'activité" : "Nouvelle activité Level 4"}</div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Zone / Area</label>
+            <select class="form-select" onchange="updateForm('area', this.value)">
+              <option value="">— Sélectionner —</option>
+              ${AREAS.map(a => `<option value="${a.id}" ${form.area === a.id ? "selected" : ""}>[${a.zone}] ${escapeHtml(a.name)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Contractor</label>
+            <select class="form-select" onchange="updateForm('contractor', this.value)">
+              <option value="">— Sélectionner —</option>
+              ${CONTRACTORS.map(c => `<option value="${c.id}" ${form.contractor === c.id ? "selected" : ""}>${c.name}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Discipline</label>
+            <select class="form-select" onchange="updateForm('discipline', this.value)">
+              <option value="">— Sélectionner —</option>
+              ${DISCIPLINES.map(d => `<option value="${d}" ${form.discipline === d ? "selected" : ""}>${d}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Priorité</label>
+            <select class="form-select" onchange="updateForm('priority', parseInt(this.value))">
+              ${PRIORITIES.map(p => `<option value="${p.id}" ${form.priority === p.id ? "selected" : ""}>${p.label}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Date début</label>
+            <input type="date" class="form-input" value="${form.startDate}" onchange="updateForm('startDate', this.value)">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Date fin</label>
+            <input type="date" class="form-input" value="${form.endDate}" onchange="updateForm('endDate', this.value)">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Statut</label>
+            <select class="form-select" onchange="updateForm('status', this.value)">
+              ${STATUS_OPTIONS.map(s => `<option value="${s.id}" ${form.status === s.id ? "selected" : ""}>${s.label}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Avancement (${form.progress}%)</label>
+            <input type="range" class="form-range" min="0" max="100" step="5" value="${form.progress}" oninput="updateForm('progress', parseInt(this.value))">
+          </div>
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Description activité</label>
+          <input type="text" class="form-input" value="${escapeHtml(form.activity)}" onchange="updateForm('activity', this.value)" placeholder="Ex: Ferraillage et coffrage poteaux">
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Notes / Commentaires</label>
+          <input type="text" class="form-input" value="${escapeHtml(form.notes)}" onchange="updateForm('notes', this.value)" placeholder="Notes additionnelles...">
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+          <button class="btn-save" onclick="saveActivity()" ${(!form.area || !form.contractor || !form.activity) ? "disabled" : ""}>${editing ? "Mettre à jour" : "Ajouter"}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderClashModal() {
+  const form = state.modal.form || {
+    area: state.modal.prefillArea || "",
+    type: "spatial",
+    contractors: state.modal.prefillContractors || [],
+    description: "", severity: "high", status: "open", resolution: "",
+  };
+  state.modal.form = form;
+
+  return `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-title danger">⚠ Déclarer un clash</div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Zone / Area</label>
+            <select class="form-select" onchange="updateForm('area', this.value)">
+              <option value="">— Sélectionner —</option>
+              ${AREAS.map(a => `<option value="${a.id}" ${form.area === a.id ? "selected" : ""}>[${a.zone}] ${escapeHtml(a.name)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Type de clash</label>
+            <select class="form-select" onchange="updateForm('type', this.value)">
+              ${CLASH_TYPES.map(t => `<option value="${t.id}" ${form.type === t.id ? "selected" : ""}>${t.icon} ${t.label}</option>`).join("")}
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Sévérité</label>
+            <select class="form-select" onchange="updateForm('severity', this.value)">
+              <option value="critical" ${form.severity === "critical" ? "selected" : ""}>🔴 Critique — Arrêt travaux</option>
+              <option value="high" ${form.severity === "high" ? "selected" : ""}>🟠 Élevé — Impact fort</option>
+              <option value="medium" ${form.severity === "medium" ? "selected" : ""}>🔵 Moyen — Gérable</option>
+              <option value="low" ${form.severity === "low" ? "selected" : ""}>🟢 Faible — Info</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Contractors impliqués</label>
+          <div class="contractor-toggle-list">
+            ${CONTRACTORS.map(c => {
+              const active = form.contractors.includes(c.id);
+              return `<button class="contractor-toggle ${active ? "active" : ""}" onclick="toggleContractor('${c.id}')" style="${active ? `background:${c.color}33; border-color:${c.color}; color:${c.color}` : ""}">${c.name}</button>`;
+            }).join("")}
+          </div>
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Description du clash</label>
+          <textarea class="form-textarea" rows="3" onchange="updateForm('description', this.value)" placeholder="Décrire le conflit, les travaux impactés et les conséquences...">${escapeHtml(form.description)}</textarea>
+        </div>
+        <div class="form-field full">
+          <label class="form-label">Résolution proposée</label>
+          <textarea class="form-textarea" rows="2" onchange="updateForm('resolution', this.value)" placeholder="Proposer une solution: séquençage, découpage zones, planning alternatif...">${escapeHtml(form.resolution)}</textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+          <button class="btn-save danger" onclick="saveClash()" ${(!form.area || form.contractors.length < 2 || !form.description) ? "disabled" : ""}>Déclarer le clash</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── MAIN RENDER ─────────────────────────────────────────────────────────────
+function renderSyncBar() {
+  const statusIcons = { idle: "●", loading: "⟳", success: "✓", error: "✗" };
+  const lastSync = state.lastSynced
+    ? "Dernière synchro : " + new Date(state.lastSynced).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+    : "Non synchronisé";
+  const msg = state.syncMessage || (state.lastSynced ? lastSync : "Cliquez sur 🔄 pour charger les données partagées");
+  return `
+    <div class="sync-bar">
+      <div class="sync-dot ${state.syncStatus}"></div>
+      <span class="sync-msg">${escapeHtml(msg)}</span>
+      <span class="sync-time">${state.syncStatus === "idle" && state.lastSynced ? lastSync : ""}</span>
+      <button class="btn-sync-load" onclick="loadFromOneDrive()" ${state.syncStatus === "loading" ? "disabled" : ""}>
+        🔄 Charger OneDrive
+      </button>
+      <button class="btn-sync-export" onclick="exportJSON()">
+        💾 Exporter JSON
+      </button>
+    </div>`;
+}
+
+function render() {
+  let content = "";
+  if (state.tab === "planning") content = renderPlanningTab();
+  else if (state.tab === "clashes") content = renderClashesTab();
+  else if (state.tab === "heatmap") content = renderHeatmapTab();
+
+  let modalHtml = "";
+  if (state.modal?.type === "activity") modalHtml = renderActivityModal();
+  else if (state.modal?.type === "clash") modalHtml = renderClashModal();
+  else if (state.modal?.type === "import") modalHtml = renderImportModal();
+  else if (state.modal?.type === "weeks") modalHtml = renderWeeksModal();
+  else if (state.modal?.type === "template") modalHtml = renderTemplateModal();
+
+  // Toast notification
+  let toastHtml = "";
+  if (state.importResult) {
+    toastHtml = `<div style="position:fixed; bottom:24px; right:24px; background:#0A2540; border:2px solid #C4D82E; border-radius:10px; padding:14px 20px; color:#FFFFFF; font-family:'Inter', sans-serif; font-size:12px; font-weight:600; box-shadow:0 8px 24px rgba(10,37,64,0.4); z-index:2000">
+      <span style="color:#C4D82E">✓</span> <b>${state.importResult.totalAdded} activités importées</b> pour la semaine ${state.importResult.week}
+    </div>`;
+  }
+
+  document.getElementById("app").innerHTML = `
+    ${renderHeader()}
+    ${renderSyncBar()}
+    ${renderTabs()}
+    <div class="content">${content}</div>
+    ${modalHtml}
+    ${toastHtml}
+  `;
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+function setTab(t) { state.tab = t; render(); }
+function setFilter(k, v) { state[k] = v; render(); }
+function setViewMode(v) { state.viewMode = v; render(); }
+function updateDate(v) { state.selectedDate = v; render(); }
+
+function updateProgress(id, delta) {
+  const a = activities.find(x => x.id === id);
+  if (a) {
+    a.progress = Math.min(100, Math.max(0, a.progress + delta));
+    if (a.progress >= 100) a.status = "completed";
+    render();
+  }
+}
+
+function deleteActivity(id) {
+  if (confirm("Supprimer cette activité ?")) {
+    activities = activities.filter(a => a.id !== id);
+    render();
+  }
+}
+
+function updateClashStatus(id, status) {
+  const c = clashes.find(x => x.id === id);
+  if (c) { c.status = status; render(); }
+}
+
+function openActivityModal(id) {
+  state.modal = { type: "activity" };
+  state.editingId = id || null;
+  render();
+}
+
+function openClashModal(id, prefillArea, prefillContractors) {
+  state.modal = { type: "clash", prefillArea, prefillContractors };
+  render();
+}
+
+function closeModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  state.modal = null;
+  state.editingId = null;
+  render();
+}
+
+function updateForm(k, v) {
+  if (state.modal?.form) {
+    state.modal.form[k] = v;
+    render();
+  }
+}
+
+function toggleContractor(id) {
+  if (!state.modal?.form) return;
+  const list = state.modal.form.contractors;
+  if (list.includes(id)) {
+    state.modal.form.contractors = list.filter(c => c !== id);
+  } else {
+    state.modal.form.contractors = [...list, id];
+  }
+  render();
+}
+
+function saveActivity() {
+  const f = state.modal.form;
+  if (!f.area || !f.contractor || !f.activity) return;
+  if (state.editingId) {
+    const idx = activities.findIndex(a => a.id === state.editingId);
+    if (idx >= 0) activities[idx] = { ...f, id: state.editingId };
+  } else {
+    activities.push({ ...f, id: Date.now() });
+  }
+  state.modal = null;
+  state.editingId = null;
+  render();
+}
+
+function saveClash() {
+  const f = state.modal.form;
+  if (!f.area || f.contractors.length < 2 || !f.description) return;
+  clashes.push({ ...f, id: Date.now(), createdDate: state.selectedDate });
+  state.modal = null;
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXCEL IMPORT
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Map between Excel labels and internal IDs
+const AREA_MAP = {
+  "A100 - Admin & Workshop": "a100", "A300 - AHF Storage": "a300",
+  "A500 - Substation": "a500", "B200 - Process Building": "b200",
+  "B300 - Filtration": "b300", "PR-01 Pipe Rack": "pr01",
+  "PR-02 Pipe Rack": "pr02", "PR-03 Pipe Rack": "pr03",
+  "PR-04 Pipe Rack": "pr04", "PR-06 Pipe Rack": "pr06",
+  "IRC-01/02": "irc", "SA 98% Storage": "sa98", "SA 75% Storage": "sa75",
+  "FSA Storage": "fsa", "Silica Slurry Storage": "silica",
+  "Liquid Effluent": "effluent", "Raw Water": "rawwater",
+  "Cooling Tower": "cooling", "Refrigeration Unit": "refrig",
+  "Water Treatment": "water_treat", "Air Compressor": "air_comp",
+  "Fire Pump Area": "fire_pump", "VRD / Roads": "vrd",
+  "DSA Area": "dsa", "2nd Workshop": "workshop2",
+};
+
+const PRIORITY_MAP = {
+  "P1 - Critical Path": 1, "P1": 1, "1": 1,
+  "P2 - Near Critical": 2, "P2": 2, "2": 2,
+  "P3 - Normal": 3, "P3": 3, "3": 3,
+  "P4 - Low": 4, "P4": 4, "4": 4,
+};
+
+const CONTRACTOR_NAME_MAP = {
+  "sogea": "sogea", "scif": "scif", "cegelec": "cegelec",
+  "ventec": "ventec", "butec": "butec", "aicm": "aicm",
+  "scc": "scc", "astri": "astri",
+};
+
+function normalizeContractorName(name) {
+  if (!name) return null;
+  const lower = String(name).toLowerCase().trim();
+  for (const key of Object.keys(CONTRACTOR_NAME_MAP)) {
+    if (lower.includes(key)) return CONTRACTOR_NAME_MAP[key];
+  }
+  return null;
+}
+
+function parseExcelDate(val) {
+  if (!val) return "";
+  if (val instanceof Date) {
+    return val.toISOString().slice(0, 10);
+  }
+  if (typeof val === "number") {
+    // Excel serial date
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    return d.toISOString().slice(0, 10);
+  }
+  const s = String(val).trim();
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  // DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
+    const [d, m, y] = s.split("/");
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  return s;
+}
+
+function parseExcelFile(file, callback) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: "array", cellDates: true });
+
+      // Read Contractor Info sheet
+      let contractorId = null;
+      let contractorName = null;
+      let weekNumber = null;
+      if (wb.Sheets["Contractor Info"]) {
+        const infoSheet = XLSX.utils.sheet_to_json(wb.Sheets["Contractor Info"], { header: 1 });
+        for (const row of infoSheet) {
+          if (!row || row.length < 2) continue;
+          const label = String(row[1] || "").toLowerCase();
+          const value = row[2];
+          if (label.includes("contractor name") && value) {
+            contractorName = String(value).trim();
+            contractorId = normalizeContractorName(value);
+          }
+          if (label.includes("week number") && value) {
+            weekNumber = String(value).trim();
+          }
+        }
+      }
+
+      // Read Activities sheet
+      if (!wb.Sheets["Activities"]) {
+        callback({ success: false, error: "Sheet 'Activities' not found in file." });
+        return;
+      }
+
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets["Activities"], { header: 1, defval: "" });
+      // Find header row (row containing "Zone")
+      let headerRowIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 20); i++) {
+        if (rows[i] && rows[i][0] && String(rows[i][0]).toLowerCase().trim() === "zone") {
+          headerRowIdx = i;
+          break;
+        }
+      }
+      if (headerRowIdx === -1) {
+        callback({ success: false, error: "Header row 'Zone' not found in Activities sheet." });
+        return;
+      }
+
+      const parsedActivities = [];
+      const errors = [];
+      const skipPatterns = [/EXAMPLES ABOVE/i, /↓.*↓/];
+
+      for (let i = headerRowIdx + 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || r.length === 0) continue;
+
+        const zone = String(r[0] || "").trim();
+        const areaLabel = String(r[1] || "").trim();
+        const activity = String(r[2] || "").trim();
+        const discipline = String(r[3] || "").trim();
+        const priority = r[4];
+        const startDate = parseExcelDate(r[5]);
+        const endDate = parseExcelDate(r[6]);
+        const status = String(r[7] || "").trim().toLowerCase();
+        const progress = parseInt(r[8]) || 0;
+        const manpower = parseInt(r[9]) || 0;
+        const notes = String(r[10] || "").trim();
+
+        // Skip empty rows and example markers
+        if (!activity || skipPatterns.some(p => p.test(activity))) continue;
+        if (!zone && !areaLabel) continue;
+
+        const areaId = AREA_MAP[areaLabel];
+        if (!areaId) {
+          errors.push(`Ligne ${i+1}: Area inconnue "${areaLabel}"`);
+          continue;
+        }
+
+        const priorityId = PRIORITY_MAP[priority] || 3;
+        const validStatuses = ["planned", "in_progress", "completed", "blocked", "delayed"];
+        const statusId = validStatuses.includes(status) ? status : "planned";
+
+        if (!contractorId) {
+          errors.push(`Ligne ${i+1}: Contractor non identifié dans la sheet 'Contractor Info'`);
+          continue;
+        }
+
+        parsedActivities.push({
+          area: areaId, contractor: contractorId, discipline,
+          activity, priority: priorityId, status: statusId,
+          startDate, endDate, progress: Math.min(100, Math.max(0, progress)),
+          manpower, notes,
+        });
+      }
+
+      callback({
+        success: true,
+        contractorId, contractorName, weekNumber,
+        activities: parsedActivities,
+        errors,
+        fileName: file.name,
+      });
+    } catch (err) {
+      callback({ success: false, error: "Erreur de lecture du fichier: " + err.message });
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleFileImport(files) {
+  if (!files || files.length === 0) return;
+  state.importStaging = { processing: true, files: [...files], results: [] };
+  render();
+
+  let processed = 0;
+  for (const file of files) {
+    parseExcelFile(file, result => {
+      state.importStaging.results.push(result);
+      processed++;
+      if (processed === files.length) {
+        state.importStaging.processing = false;
+        render();
+      }
+    });
+  }
+}
+
+function confirmImport() {
+  if (!state.importStaging) return;
+  const week = state.currentWeek || `W${getWeekNumber(new Date())}-${new Date().getFullYear()}`;
+  let totalAdded = 0;
+
+  for (const result of state.importStaging.results) {
+    if (!result.success) continue;
+    const newIds = [];
+    for (const a of result.activities) {
+      const id = Date.now() + Math.random();
+      activities.push({ ...a, id, importedWeek: week, importedFrom: result.fileName });
+      newIds.push(id);
+      totalAdded++;
+    }
+    importHistory.push({
+      week, contractor: result.contractorId,
+      fileName: result.fileName,
+      importedAt: new Date().toISOString(),
+      count: result.activities.length,
+      activityIds: newIds,
+    });
+  }
+
+  state.importResult = { totalAdded, week };
+  state.importStaging = null;
+  state.modal = null;
+  render();
+  setTimeout(() => { state.importResult = null; render(); }, 4000);
+}
+
+function cancelImport() {
+  state.importStaging = null;
+  render();
+}
+
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function getAvailableWeeks() {
+  const weeks = new Set();
+  weeks.add(state.currentWeek);
+  importHistory.forEach(h => weeks.add(h.week));
+  activities.forEach(a => { if (a.importedWeek) weeks.add(a.importedWeek); });
+  return [...weeks].sort().reverse();
+}
+
+// ─── IMPORT MODAL ───────────────────────────────────────────────────────────
+function renderImportModal() {
+  const staging = state.importStaging;
+  let body = "";
+
+  if (!staging) {
+    // Initial state
+    body = `
+      <div class="import-section">
+        <div class="import-section-title">📥 Importer les fichiers Excel des contractors</div>
+        <div class="dropzone" onclick="document.getElementById('xlsx-input').click()"
+             ondragover="event.preventDefault(); this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="event.preventDefault(); this.classList.remove('drag-over'); handleFileImport(event.dataTransfer.files)">
+          <div class="dropzone-icon">📊</div>
+          <div class="dropzone-text">Glisser-déposer les fichiers Excel ici</div>
+          <div class="dropzone-hint">ou cliquer pour sélectionner — vous pouvez sélectionner plusieurs fichiers en même temps</div>
+          <input type="file" id="xlsx-input" accept=".xlsx,.xls" multiple onchange="handleFileImport(this.files)">
+        </div>
+      </div>
+      <div style="font-size:11px; color:#6B7280; line-height:1.6; padding:10px; background:#F8F7F3; border-radius:6px">
+        <b style="color:#1A2332">📋 Format attendu :</b><br>
+        Chaque fichier doit suivre le template AHF_3WLA_Template_Contractor.xlsx avec :<br>
+        • Sheet <b>"Contractor Info"</b> — nom du contractor + semaine<br>
+        • Sheet <b>"Activities"</b> — colonnes Zone, Area, Activity, Discipline, Priority, Start Date, End Date, Status, Progress %, Manpower, Notes<br>
+        <span style="color:#92400E; font-weight:600">⚠ Si un contractor a déjà importé pour cette semaine, ses activités précédentes seront archivées.</span>
+      </div>`;
+  } else if (staging.processing) {
+    body = `<div style="text-align:center; padding:40px"><div style="font-size:20px">⏳</div><div style="margin-top:10px; color:#6B7280">Lecture des fichiers...</div></div>`;
+  } else {
+    // Show parsed results
+    const total = staging.results.reduce((s, r) => s + (r.success ? r.activities.length : 0), 0);
+    const errCount = staging.results.filter(r => !r.success).length;
+
+    body = `
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px; font-weight:600; color:#0A2540; font-family:'Inter', sans-serif; margin-bottom:4px">
+          ${total} activités prêtes à importer · ${staging.results.length} fichier${staging.results.length > 1 ? "s" : ""} traité${staging.results.length > 1 ? "s" : ""}
+        </div>
+        <div style="font-size:10px; color:#6B7280">Vérifier les résultats avant validation</div>
+      </div>
+      ${staging.results.map((r, i) => {
+        if (!r.success) {
+          return `<div class="import-result error">
+            <div class="import-result-title" style="color:#DC2626">✗ ${escapeHtml(r.fileName || `Fichier ${i+1}`)}</div>
+            <div class="import-result-line">${escapeHtml(r.error)}</div>
+          </div>`;
+        }
+        const c = getContractor(r.contractorId);
+        return `<div class="import-result">
+          <div class="import-result-title" style="color:#16A34A">
+            ✓ ${escapeHtml(r.fileName)}
+            ${c ? `<span style="background:${c.color}22; color:${c.color}; padding:2px 8px; border-radius:4px; font-size:10px; margin-left:8px">${c.name}</span>` : ""}
+            ${r.weekNumber ? `<span style="color:#6B7280; margin-left:6px; font-size:10px">Semaine ${escapeHtml(r.weekNumber)}</span>` : ""}
+          </div>
+          <div class="import-result-line">📋 <b>${r.activities.length}</b> activités identifiées</div>
+          ${r.errors.length > 0 ? `<div class="import-result-line" style="color:#92400E">⚠ ${r.errors.length} ligne(s) ignorée(s) :<br>${r.errors.slice(0, 3).map(e => "  · " + escapeHtml(e)).join("<br>")}${r.errors.length > 3 ? "<br>  ..." : ""}</div>` : ""}
+        </div>`;
+      }).join("")}`;
+  }
+
+  return `
+    <div class="modal-overlay" onclick="closeImportModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:680px">
+        <button class="modal-close" onclick="closeImportModal()">×</button>
+        <div class="modal-title">⇪ Import Excel — Planning Hebdomadaire</div>
+        ${body}
+        <div class="modal-actions">
+          ${staging && !staging.processing ? `
+            <button class="btn-cancel" onclick="cancelImport(); state.modal = null; render()">Annuler</button>
+            <button class="btn-save" onclick="confirmImport()" ${staging.results.every(r => !r.success) ? "disabled" : ""}>
+              ✓ Confirmer l'import (${staging.results.reduce((s, r) => s + (r.success ? r.activities.length : 0), 0)} activités)
+            </button>
+          ` : `
+            <button class="btn-cancel" onclick="closeImportModal()">Fermer</button>
+          `}
+        </div>
+      </div>
+    </div>`;
+}
+
+function openImportModal() {
+  state.modal = { type: "import" };
+  state.importStaging = null;
+  render();
+}
+
+function closeImportModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  state.modal = null;
+  state.importStaging = null;
+  render();
+}
+
+// ─── WEEKS MODAL ────────────────────────────────────────────────────────────
+function renderWeeksModal() {
+  const weeks = getAvailableWeeks();
+  return `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:600px">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-title">📅 Gestion des semaines</div>
+        <div style="font-size:11px; color:#6B7280; margin-bottom:14px">
+          Semaine active : <b style="color:#0A2540">${state.currentWeek}</b> · Les imports sont rattachés à cette semaine.
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label class="form-label">Définir la semaine active</label>
+          <div style="display:flex; gap:8px">
+            <input type="text" class="form-input" id="week-input" value="${escapeHtml(state.currentWeek)}" placeholder="Ex: W18-2026" style="flex:1">
+            <button class="btn-save" onclick="state.currentWeek = document.getElementById('week-input').value; render()">Définir</button>
+          </div>
+        </div>
+
+        <div class="import-section-title">Historique des imports (${importHistory.length})</div>
+        ${importHistory.length === 0 ? `
+          <div style="text-align:center; padding:30px; color:#9CA3AF; font-size:11px">
+            Aucun import enregistré pour le moment.
+          </div>
+        ` : `
+          <div class="archive-list">
+            ${[...importHistory].reverse().map(h => {
+              const c = getContractor(h.contractor);
+              return `<div class="archive-row">
+                <div class="archive-row-info">
+                  <span class="contractor-pill" style="background:${c?.color || '#444'}22; color:${c?.color || '#888'}">${c?.shortName || h.contractor}</span>
+                  <span style="color:#1A2332">${escapeHtml(h.fileName)}</span>
+                  <span style="color:#6B7280; font-size:10px">${h.week}</span>
+                </div>
+                <div style="font-size:10px; color:#6B7280">${h.count} activités · ${new Date(h.importedAt).toLocaleString('fr-FR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>
+              </div>`;
+            }).join("")}
+          </div>
+        `}
+
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal()">Fermer</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function openWeeksModal() {
+  state.modal = { type: "weeks" };
+  render();
+}
+
+// ─── TEMPLATE INFO MODAL ────────────────────────────────────────────────────
+function renderTemplateModal() {
+  return `
+    <div class="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:600px">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <div class="modal-title" style="color:#16A34A">⬇ Template Excel pour les contractors</div>
+
+        <div style="background:rgba(76,175,80,0.07); border:1px solid rgba(76,175,80,0.27); border-radius:8px; padding:14px; margin-bottom:14px">
+          <div style="font-size:12px; color:#1A2332; line-height:1.6; font-family:'Inter', sans-serif">
+            Le fichier <b style="color:#16A34A">AHF_3WLA_Template_Contractor.xlsx</b> a été généré séparément.
+            Envoyez-le aux 8 contractors (SOGEA, SCIF, CEGELEC, VENTEC, BUTEC, AICM, SCC, ASTRI) pour qu'ils
+            soumettent leur planning hebdomadaire dans un format standardisé.
+          </div>
+        </div>
+
+        <div style="font-size:11px; color:#6B7280; line-height:1.7; font-family:'Inter', sans-serif">
+          <b style="color:#1A2332">📁 Le template contient :</b><br>
+          <span style="color:#6B7280">·</span> Sheet <b>Instructions</b> — comment remplir<br>
+          <span style="color:#6B7280">·</span> Sheet <b>Contractor Info</b> — identification + manpower<br>
+          <span style="color:#6B7280">·</span> Sheet <b>Activities</b> — 200 lignes prêtes avec dropdowns<br>
+          <span style="color:#6B7280">·</span> Sheet <b>Reference Lists</b> — listes officielles des areas/disciplines/statuts<br><br>
+
+          <b style="color:#1A2332">📋 Workflow recommandé :</b><br>
+          <span style="color:#6B7280">1.</span> <b>Vendredi</b> — JESA envoie le template aux 8 contractors par email<br>
+          <span style="color:#6B7280">2.</span> <b>Lundi avant 12h</b> — Chaque contractor renvoie son fichier rempli<br>
+          <span style="color:#6B7280">3.</span> <b>Lundi après-midi</b> — JESA importe les 8 fichiers ici (bouton "Importer Excel")<br>
+          <span style="color:#6B7280">4.</span> <b>Lundi 16h</b> — Tour de chantier avec planning consolidé + clashs détectés<br><br>
+
+          <b style="color:#92400E">⚠ Convention de nommage :</b><br>
+          <span style="font-family:monospace; color:#0A2540">AHF_3WLA_[CONTRACTOR]_W[XX]_[YYYY-MM-DD].xlsx</span><br>
+          Exemple : <span style="font-family:monospace; color:#6B7280">AHF_3WLA_SOGEA_W18_2026-04-27.xlsx</span>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeModal()">Fermer</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function downloadTemplateInfo() {
+  state.modal = { type: "template" };
+  render();
+}
+
+// Initial render + auto-load from OneDrive
+render();
+// Auto-load shared data on startup
+loadFromOneDrive();
+</script>
+</body>
+</html>
